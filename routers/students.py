@@ -1,6 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from typing import Optional
+from database import get_db
+import models
 
 router = APIRouter()
 
@@ -16,56 +18,57 @@ class Student(BaseModel):
     email: str
 
 @router.post("/students")
-def create_student(student: Student):
+def create_student(student: Student, db: Session = Depends(get_db)):
+    new_student = models.Student(**student.dict())
+    db.add(new_student)
+    db.commit()
+    db.refresh(new_student)
     return {
         "message": "Student created successfully",
         "student": student
     }
 
 @router.get("/students")
-def get_students():
-    return {
-        "students": [
-            {
-                "student_id": "001",
-                "first_name": "Waah",
-                "last_name": "Sudais",
-                "place_of_birth": "Yaounde",
-                "department": "Computer Science",
-                "speciality": "Software Engineering",
-                "parent_name": "James Doe",
-                "contact": "677000000",
-                "email": "john.doe@email.com"
-            }
-        ]
-    }
+def get_students(db: Session = Depends(get_db)):
+    students = db.query(models.Student).all()
+    return {"students": students}
 
 @router.get("/students/{student_id}")
-def get_student(student_id: str):
-    return {
-        "student": {
-            "student_id": student_id,
-            "first_name": "Nabil",
-            "last_name": "Patricia",
-            "place_of_birth": "Yaounde",
-            "department": "Computer Science",
-            "speciality": "Software Engineering",
-            "parent_name": "James Doe",
-            "contact": "677000000",
-            "email": "john.doe@email.com"
-        }
-    }
+def get_student(student_id: str, db: Session = Depends(get_db)):
+    student = db.query(models.Student).filter(
+        models.Student.student_id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return {"student": student}
 
 @router.put("/students/{student_id}")
-def update_student(student_id: str, student: Student):
+def update_student(student_id: str, student: Student, 
+                   db: Session = Depends(get_db)):
+    existing_student = db.query(models.Student).filter(
+        models.Student.student_id == student_id).first()
+    if not existing_student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    for key, value in student.dict().items():
+        setattr(existing_student, key, value)
+    db.commit()
     return {
         "message": "Student updated successfully",
-        "student_id": student_id,
-        "updated_data": student
+        "student": student
     }
 
 @router.delete("/students/{student_id}")
-def delete_student(student_id: str):
-    return {
-        "message": f"Student {student_id} deleted successfully"
-    }
+def delete_student(student_id: str, db: Session = Depends(get_db)):
+    student = db.query(models.Student).filter(
+        models.Student.student_id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    db.delete(student)
+    db.commit()
+    return {"message": f"Student {student_id} deleted successfully"}
+
+#  db: Session = Depends(get_db) → connects to real database
+# db.add() → saves to database
+# db.commit() → confirms the save
+# db.query() → fetches from database
+# db.delete() → deletes from database
+# HTTPException → returns proper error if student not found

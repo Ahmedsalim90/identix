@@ -1,5 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from database import get_db
+import models
 
 router = APIRouter()
 
@@ -10,38 +13,39 @@ class IDCard(BaseModel):
     expire_date: str
 
 @router.post("/idcards")
-def create_idcard(idcard: IDCard):
+def create_idcard(idcard: IDCard, db: Session = Depends(get_db)):
+    student = db.query(models.Student).filter(
+        models.Student.student_id == idcard.student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    new_idcard = models.IDCard(**idcard.dict())
+    db.add(new_idcard)
+    db.commit()
+    db.refresh(new_idcard)
     return {
         "message": "ID Card created successfully",
         "idcard": idcard
     }
 
 @router.get("/idcards")
-def get_idcards():
-    return {
-        "idcards": [
-            {
-                "card_id": "CARD001",
-                "student_id": "001",
-                "issued_date": "2024-01-01",
-                "expire_date": "2025-01-01"
-            }
-        ]
-    }
+def get_idcards(db: Session = Depends(get_db)):
+    idcards = db.query(models.IDCard).all()
+    return {"idcards": idcards}
 
 @router.get("/idcards/{card_id}")
-def get_idcard(card_id: str):
-    return {
-        "idcard": {
-            "card_id": card_id,
-            "student_id": "001",
-            "issued_date": "2024-01-01",
-            "expire_date": "2025-01-01"
-        }
-    }
+def get_idcard(card_id: str, db: Session = Depends(get_db)):
+    idcard = db.query(models.IDCard).filter(
+        models.IDCard.card_id == card_id).first()
+    if not idcard:
+        raise HTTPException(status_code=404, detail="ID Card not found")
+    return {"idcard": idcard}
 
 @router.delete("/idcards/{card_id}")
-def delete_idcard(card_id: str):
-    return {
-        "message": f"ID Card {card_id} deleted successfully"
-    }
+def delete_idcard(card_id: str, db: Session = Depends(get_db)):
+    idcard = db.query(models.IDCard).filter(
+        models.IDCard.card_id == card_id).first()
+    if not idcard:
+        raise HTTPException(status_code=404, detail="ID Card not found")
+    db.delete(idcard)
+    db.commit()
+    return {"message": f"ID Card {card_id} deleted successfully"}ok dotenv

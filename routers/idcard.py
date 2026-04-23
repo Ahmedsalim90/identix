@@ -48,4 +48,4 @@ def delete_idcard(card_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="ID Card not found")
     db.delete(idcard)
     db.commit()
-    return {"message": f"ID Card {card_id} deleted successfully"}ok dotenv
+    return {"message": f"ID Card {card_id} deleted successfully"}

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Date, ForeignKey
+from sqlalchemy import Column, String, ForeignKey
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -8,6 +8,7 @@ class Student(Base):
     student_id = Column(String, primary_key=True, index=True)
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
+    age = Column(String, nullable=False)
     place_of_birth = Column(String, nullable=False)
     department = Column(String, nullable=False)
     speciality = Column(String, nullable=False)
@@ -36,7 +37,14 @@ class Admin(Base):
     school = Column(String, nullable=False)
     email = Column(String, nullable=False)
 
+class Notification(Base):
+    __tablename__ = "notifications"
 
+    id = Column(String, primary_key=True, index=True)
+    message = Column(String, nullable=False)
+    is_read = Column(String, default="false")
+    created_at = Column(String, nullable=False)
+    
 #__tablename__ → tells SQLAlchemy which table in PostgreSQL to use
 #Column → represents each field in the table
 #primary_key=True → the unique identifier for each record

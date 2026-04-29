@@ -6,7 +6,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import students, idcard, admin
+from routers import students, idcard, admin, notifications
 from database import engine
 import models
 
@@ -29,6 +29,7 @@ app.add_middleware(
 app.include_router(students.router)
 app.include_router(idcard.router)
 app.include_router(admin.router)
+app.include_router(notifications.router)
 
 @app.get("/")
 def home():

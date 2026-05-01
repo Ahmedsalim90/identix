@@ -10,11 +10,13 @@ class Student(Base):
     last_name = Column(String, nullable=False)
     age = Column(String, nullable=False)
     place_of_birth = Column(String, nullable=False)
+    date_of_birth = Column(String, nullable=False)
     department = Column(String, nullable=False)
     speciality = Column(String, nullable=False)
     parent_name = Column(String, nullable=False)
     contact = Column(String, nullable=False)
     email = Column(String, nullable=False)
+    photo_url = Column(String, nullable=False)
 
     idcards = relationship("IDCard", back_populates="student")
 

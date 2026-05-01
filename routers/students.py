@@ -14,11 +14,13 @@ class Student(BaseModel):
     last_name: str
     age: str
     place_of_birth: str
+    date_of_birth: str
     department: str
     speciality: str
     parent_name: str
     contact: str
     email: str
+    photo_url: str
 
 @router.post("/students")
 def create_student(student: Student, db: Session = Depends(get_db)):

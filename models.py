@@ -17,6 +17,15 @@ class Student(Base):
     contact = Column(String, nullable=False)
     email = Column(String, nullable=False)
     photo_url = Column(String, nullable=False)
+    age = Column(String, nullable=True)
+    gender = Column(String, nullable=True)
+    campus = Column(String, nullable=True)
+    level = Column(String, nullable=True)
+    address = Column(String, nullable=True)
+    nationality = Column(String, nullable=True)
+    city = Column(String, nullable=True)
+    school = Column(String, nullable=True)
+    emergency_phone = Column(String, nullable=True)
 
     idcards = relationship("IDCard", back_populates="student")
 

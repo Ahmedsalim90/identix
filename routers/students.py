@@ -110,6 +110,17 @@ async def create_student(
         parent_name    = emergencyName,
         photo_url      = photo_url,     # Cloudinary HTTPS URL stored here
         age            = "",
+        gender         = gender,
+        school         = school,
+        campus         = campus,
+        address        = address,
+        nationality    = nationality,
+        city           = city,
+        emergencyName  = emergencyName,
+        emergencyPhone = emergencyPhone,
+
+
+
     )
 
     db.add(new_student)

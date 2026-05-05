@@ -23,9 +23,19 @@ def _download_photo(url):
     if not url:
         return None
     try:
+        import ssl
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        
         suffix = ".jpg" if "jpg" in url.lower() else ".png"
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
-        urllib.request.urlretrieve(url, tmp.name)
+        opener = urllib.request.build_opener(
+            urllib.request.HTTPSHandler(context=ssl_context)
+        )
+        with opener.open(url) as response:
+            tmp.write(response.read())
+        tmp.close()
         return tmp.name
     except Exception as e:
         print(f"Could not download photo: {e}")

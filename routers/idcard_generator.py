@@ -8,17 +8,26 @@ import os
 
 router = APIRouter()
 
+# GET endpoint (for testing in docs)
 @router.get("/generate-card/{student_id}")
-def generate_student_card(student_id: str, db: Session = Depends(get_db)):
-    
-    # Get student from database
+def generate_card_get(student_id: str, db: Session = Depends(get_db)):
+    return generate_card(student_id, db)
+
+# POST endpoint (for frontend team)
+@router.post("/idcards/generate")
+def generate_card_post(data: dict, db: Session = Depends(get_db)):
+    student_id = data.get("student_id")
+    if not student_id:
+        raise HTTPException(status_code=400, detail="student_id is required")
+    return generate_card(student_id, db)
+
+def generate_card(student_id: str, db: Session):
     student = db.query(models.Student).filter(
         models.Student.student_id == student_id).first()
-    
+
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    
-    # Create student dictionary
+
     student_data = {
         "student_id": student.student_id,
         "first_name": student.first_name,
@@ -27,21 +36,17 @@ def generate_student_card(student_id: str, db: Session = Depends(get_db)):
         "speciality": student.speciality,
         "photo_url": student.photo_url
     }
-    
-    # Create output folder
+
     os.makedirs("generated_cards", exist_ok=True)
-    
-    # Generate PDF
     output_path = f"generated_cards/{student_id}.pdf"
     result = generate_id_card(student_data, output_path)
-    
+
     if not result:
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail="Failed to generate ID card"
         )
-    
-    # Return PDF file
+
     return FileResponse(
         output_path,
         media_type="application/pdf",

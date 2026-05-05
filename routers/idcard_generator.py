@@ -3,25 +3,54 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from database import get_db
 from pdf_generator import generate_id_card
-import models
-import os
+import models, os, zipfile
 
 router = APIRouter()
 
-# GET endpoint (for testing in docs)
-@router.get("/generate-card/{student_id}")
-def generate_card_get(student_id: str, db: Session = Depends(get_db)):
-    return generate_card(student_id, db)
-
-# POST endpoint (for frontend team)
 @router.post("/idcards/generate")
 def generate_card_post(data: dict, db: Session = Depends(get_db)):
-    student_id = data.get("student_id")
-    if not student_id:
-        raise HTTPException(status_code=400, detail="student_id is required")
-    return generate_card(student_id, db)
+    student_ids = data.get("studentIds") or data.get("student_ids")
+    if not student_ids:
+        single = data.get("student_id")
+        if single:
+            student_ids = [single]
+        else:
+            raise HTTPException(status_code=400, detail="studentIds is required")
+    
+    generated = []
+    os.makedirs("generated_cards", exist_ok=True)
+    
+    for sid in student_ids:
+        student = db.query(models.Student).filter(
+            models.Student.student_id == sid).first()
+        if not student:
+            continue
+        student_data = {
+            "student_id": student.student_id,
+            "first_name": student.first_name,
+            "last_name": student.last_name,
+            "department": student.department,
+            "speciality": getattr(student, "speciality", ""),
+            "photo_url": student.photo_url,
+        }
+        output_path = f"generated_cards/{sid}.pdf"
+        result = generate_id_card(student_data, output_path)
+        if result:
+            generated.append({
+                "id": student.student_id,
+                "name": f"{student.first_name} {student.last_name}",
+                "studentId": student.student_id,
+                "department": student.department,
+                "pdf": output_path,
+            })
+    
+    if not generated:
+        raise HTTPException(status_code=404, detail="No students found for given IDs")
+    
+    return {"success": True, "generated": generated}
 
-def generate_card(student_id: str, db: Session):
+@router.get("/generate-card/{student_id}")
+def generate_card_get(student_id: str, db: Session = Depends(get_db)):
     student = db.query(models.Student).filter(
         models.Student.student_id == student_id).first()
 
@@ -33,8 +62,8 @@ def generate_card(student_id: str, db: Session):
         "first_name": student.first_name,
         "last_name": student.last_name,
         "department": student.department,
-        "speciality": student.speciality,
-        "photo_url": student.photo_url
+        "speciality": getattr(student, "speciality", ""),
+        "photo_url": student.photo_url,
     }
 
     os.makedirs("generated_cards", exist_ok=True)
@@ -42,10 +71,7 @@ def generate_card(student_id: str, db: Session):
     result = generate_id_card(student_data, output_path)
 
     if not result:
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to generate ID card"
-        )
+        raise HTTPException(status_code=500, detail="Failed to generate ID card")
 
     return FileResponse(
         output_path,

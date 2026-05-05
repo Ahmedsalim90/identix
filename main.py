@@ -6,7 +6,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import students, idcard, admin, notifications, upload
+from routers import students, idcard, admin, notifications, upload, idcard_generator
 from database import engine
 import models
 
@@ -31,11 +31,13 @@ app.include_router(idcard.router)
 app.include_router(admin.router)
 app.include_router(notifications.router)
 app.include_router(upload.router)
+app.include_router(idcard_generator.router)
 
 @app.get("/")
 def home():
     return {"message": "IDentix API is running!"}
 
+    
   # from routers import students → imports your students router
   # app.include_router(students.router) → connects your students endpoints to the main API
   # allow_origins=["*"] → allows any frontend to connect to your API

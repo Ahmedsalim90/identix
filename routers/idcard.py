@@ -27,10 +27,7 @@ def create_idcard(idcard: IDCard, db: Session = Depends(get_db)):
         "idcard": idcard
     }
 
-@router.get("/idcards")
-def get_idcards(db: Session = Depends(get_db)):
-    idcards = db.query(models.IDCard).all()
-    return {"idcards": idcards}
+
 
 @router.get("/idcards/{card_id}")
 def get_idcard(card_id: str, db: Session = Depends(get_db)):

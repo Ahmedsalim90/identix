@@ -11,6 +11,7 @@ from routers.idcard_generator import router as idcard_generator_router
 from routers.notifications import router as notifications_router
 from routers.students import router as students_router
 from routers.upload import router as upload_router
+from routers.stats import router as stats_router
 
 # Create all tables (including the new username/password columns via auth.py)
 models.Base.metadata.create_all(bind=engine)
@@ -36,11 +37,12 @@ app.add_middleware(
 # Register all routers
 app.include_router(auth_router)
 app.include_router(students_router)
-app.include_router(idcard_router)
+app.include_router(idcard_generator_router) 
 app.include_router(admin_router)
 app.include_router(notifications_router)
 app.include_router(upload_router)
-app.include_router(idcard_generator_router)
+app.include_router(idcard_router)
+app.include_router(stats_router)
 
 
 @app.get("/")

@@ -41,14 +41,13 @@ class IDCard(Base):
 class Admin(Base):
     __tablename__ = "admins"
 
-    admin_id   = Column(String, primary_key=True, index=True)
+    admin_id = Column(String, primary_key=True)
     admin_name = Column(String, nullable=False)
-    contact    = Column(String, nullable=True)
-    school     = Column(String, nullable=True)
-    email      = Column(String, nullable=False)
-    # Auth fields — added for login/register support
-    username   = Column(String, nullable=True, unique=True)
-    password   = Column(String, nullable=True)   # SHA-256 hashed
+    contact = Column(String, nullable=False)
+    school = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    username = Column(String, nullable=True)
+    password = Column(String, nullable=True)
 
 class Notification(Base):
     __tablename__ = "notifications"

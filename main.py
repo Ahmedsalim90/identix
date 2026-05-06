@@ -1,16 +1,23 @@
-
- # "/": means the home address of your API  Like the homepage of a website
- # get: means the frontend is requesting/reading data 
-
- #connecting three routers to your main.py
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import students, idcard, admin, notifications, upload, idcard_generator
 from database import engine
 import models
 
+# Import all routers
+from routers.admin import router as admin_router
+from routers.auth import router as auth_router
+from routers.idcard import router as idcard_router
+from routers.idcard_generator import router as idcard_generator_router
+from routers.notifications import router as notifications_router
+from routers.students import router as students_router
+from routers.upload import router as upload_router
+
+# Create all tables (including the new username/password columns via auth.py)
 models.Base.metadata.create_all(bind=engine)
+
+# Also ensure auth model columns exist (safe extend)
+from routers.auth import AdminAuth
+AdminAuth.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="IDentix API",
@@ -26,23 +33,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(students.router)
-app.include_router(idcard.router)
-app.include_router(admin.router)
-app.include_router(notifications.router)
-app.include_router(upload.router)
-app.include_router(idcard_generator.router)
+# Register all routers
+app.include_router(auth_router)
+app.include_router(students_router)
+app.include_router(idcard_router)
+app.include_router(admin_router)
+app.include_router(notifications_router)
+app.include_router(upload_router)
+app.include_router(idcard_generator_router)
+
 
 @app.get("/")
 def home():
     return {"message": "IDentix API is running!"}
 
-    
-  # from routers import students → imports your students router
-  # app.include_router(students.router) → connects your students endpoints to the main API
-  # allow_origins=["*"] → allows any frontend to connect to your API
- #  allow_methods=["*"] → allows GET, POST, PUT, DELETE
-#   allow_headers=["*"] → allows any headers
-# from database import engine → imports your database connection
-# import models → imports your database tables
-# models.Base.metadata.create_all(bind=engine) → automatically creates all tables in PostgreSQL when API starts!
+ 

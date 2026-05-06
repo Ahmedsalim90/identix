@@ -2,12 +2,23 @@ from fastapi import APIRouter, Depends, HTTPException, Form, File, UploadFile
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from database import get_db
-from datetime import datetime
+from datetime import datetime, date
 import models
 import uuid
 import os
 import cloudinary
 import cloudinary.uploader
+
+# Age calcultor
+
+def calculate_age(dob_str: str) -> str:
+    try:
+        dob = datetime.strptime(dob_str, "%Y-%m-%d").date()
+        today = date.today()
+        age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+        return str(age)
+    except:
+        return ""
 
 cloudinary.config(
     cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME"),
@@ -81,7 +92,7 @@ async def create_student(
         parent_name     = emergencyName,
         emergency_phone = emergencyPhone,
         photo_url       = photo_url,
-        age             = "",
+        age             = calculate_age(date) ,
         gender          = gender,
         school          = school,
         campus          = campus,

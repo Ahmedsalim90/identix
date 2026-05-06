@@ -41,11 +41,14 @@ class IDCard(Base):
 class Admin(Base):
     __tablename__ = "admins"
 
-    admin_id = Column(String, primary_key=True, index=True)
+    admin_id   = Column(String, primary_key=True, index=True)
     admin_name = Column(String, nullable=False)
-    contact = Column(String, nullable=False)
-    school = Column(String, nullable=False)
-    email = Column(String, nullable=False)
+    contact    = Column(String, nullable=True)
+    school     = Column(String, nullable=True)
+    email      = Column(String, nullable=False)
+    # Auth fields — added for login/register support
+    username   = Column(String, nullable=True, unique=True)
+    password   = Column(String, nullable=True)   # SHA-256 hashed
 
 class Notification(Base):
     __tablename__ = "notifications"
@@ -54,11 +57,3 @@ class Notification(Base):
     message = Column(String, nullable=False)
     is_read = Column(String, default="false")
     created_at = Column(String, nullable=False)
-
-    
-    
-#__tablename__ → tells SQLAlchemy which table in PostgreSQL to use
-#Column → represents each field in the table
-#primary_key=True → the unique identifier for each record
-#ForeignKey → links IDCard to Student
-#relationship → lets you access student's ID cards and vice versa

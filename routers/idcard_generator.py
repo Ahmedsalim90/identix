@@ -10,11 +10,9 @@ from datetime import datetime, timedelta
 
 router = APIRouter()
 
-
-# ── GET single card as PDF (testing / direct download) ───────────────────────
 @router.get("/idcards/generate-card/{student_id}")
 def generate_card_get(student_id: str, db: Session = Depends(get_db)):
-    student  = _get_student_or_404(student_id, db)
+    student = _get_student_or_404(student_id, db)
     pdf_path = _make_pdf(student)
     _save_card_record(student_id, db)
     return FileResponse(
@@ -23,8 +21,6 @@ def generate_card_get(student_id: str, db: Session = Depends(get_db)):
         filename=f"id_card_{student_id}.pdf"
     )
 
-
-# ── POST bulk generate — returns JSON so frontend can display cards ───────────
 @router.post("/idcards/generate")
 def generate_cards_post(payload: dict, db: Session = Depends(get_db)):
     student_ids = payload.get("studentIds", [])
@@ -32,20 +28,17 @@ def generate_cards_post(payload: dict, db: Session = Depends(get_db)):
         raise HTTPException(status_code=422, detail="No studentIds provided")
 
     generated = []
-    failed    = []
+    failed = []
 
     for sid in student_ids:
         try:
             student = _get_student_or_404(sid, db)
-
-            # Generate PDF (best-effort — card record is saved regardless)
             try:
                 _make_pdf(student)
             except Exception as pdf_err:
                 print(f"PDF warning for {sid}: {pdf_err}")
 
             card = _save_card_record(sid, db)
-
             generated.append({
                 "id":             card.card_id,
                 "card_id":        card.card_id,
@@ -73,84 +66,18 @@ def generate_cards_post(payload: dict, db: Session = Depends(get_db)):
                 "validUntil":     card.expire_date,
                 "enrolledAt":     None,
             })
-
         except HTTPException as e:
             failed.append({"student_id": sid, "reason": e.detail})
         except Exception as e:
             failed.append({"student_id": sid, "reason": str(e)})
 
     if not generated:
-        raise HTTPException(
-            status_code=500,
-            detail=f"No cards could be generated. Details: {failed}"
-        )
+        raise HTTPException(status_code=500,
+            detail=f"No cards could be generated. Details: {failed}")
 
-    return {
-        "success":   True,
-        "generated": generated,
-        "failed":    failed,
-        "total":     len(generated),
-    }
+    return {"success": True, "generated": generated, "failed": failed, "total": len(generated)}
 
 
-# ── GET all idcards with full student info joined ─────────────────────────────
-@router.get("/idcards")
-def get_idcards(db: Session = Depends(get_db)):
-    cards = db.query(models.IDCard).all()
-    result = []
-    for card in cards:
-        student = db.query(models.Student).filter(
-            models.Student.student_id == card.student_id
-        ).first()
-        result.append({
-            "id":             card.card_id,
-            "card_id":        card.card_id,
-            "studentId":      card.student_id,
-            "student_id":     card.student_id,
-            "name":           f"{student.first_name} {student.last_name}" if student else "Unknown",
-            "first_name":     student.first_name  if student else "",
-            "last_name":      student.last_name   if student else "",
-            "department":     student.department  if student else "",
-            "speciality":     (student.speciality or "") if student else "",
-            "email":          (student.email or "")      if student else "",
-            "photo":          (student.photo_url or "")  if student else "",
-            "photo_url":      (student.photo_url or "")  if student else "",
-            "level":          (student.level or "")      if student else "",
-            "campus":         (student.campus or "")     if student else "",
-            "issued_date":    card.issued_date,
-            "expire_date":    card.expire_date,
-            "issuedAt":       card.issued_date,
-            "expiryDate":     card.expire_date,
-            "generationDate": card.issued_date,
-            "cardStatus":     _card_status(card.expire_date),
-            "status":         "generated",
-        })
-    return {"idcards": result, "data": result, "total": len(result)}
-
-
-# ── GET single idcard ─────────────────────────────────────────────────────────
-@router.get("/idcards/{card_id}")
-def get_idcard(card_id: str, db: Session = Depends(get_db)):
-    card = db.query(models.IDCard).filter(
-        models.IDCard.card_id == card_id).first()
-    if not card:
-        raise HTTPException(status_code=404, detail="ID Card not found")
-    return {"idcard": card}
-
-
-# ── DELETE idcard ─────────────────────────────────────────────────────────────
-@router.delete("/idcards/{card_id}")
-def delete_idcard(card_id: str, db: Session = Depends(get_db)):
-    card = db.query(models.IDCard).filter(
-        models.IDCard.card_id == card_id).first()
-    if not card:
-        raise HTTPException(status_code=404, detail="ID Card not found")
-    db.delete(card)
-    db.commit()
-    return {"message": f"ID Card {card_id} deleted successfully"}
-
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
 def _get_student_or_404(student_id: str, db: Session) -> models.Student:
     student = db.query(models.Student).filter(
         models.Student.student_id == student_id
@@ -203,14 +130,3 @@ def _save_card_record(student_id: str, db: Session) -> models.IDCard:
     db.commit()
     db.refresh(card)
     return card
-
-
-def _card_status(expire_date: str) -> str:
-    try:
-        exp  = datetime.strptime(expire_date, "%Y-%m-%d")
-        days = (exp - datetime.now()).days
-        if days < 0:   return "expired"
-        if days <= 30: return "expiring"
-        return "active"
-    except Exception:
-        return "active"

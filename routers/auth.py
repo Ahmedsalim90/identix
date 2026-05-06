@@ -9,11 +9,6 @@ import hashlib
 router = APIRouter()
 
 
-# ─── Admin Auth Model (extends the existing admins table) ─────────────────────
-# We store hashed passwords in the existing Admin table.
-# Run `ALTER TABLE admins ADD COLUMN IF NOT EXISTS username VARCHAR;`
-# OR just let SQLAlchemy create/migrate it.
-
 class AdminAuth(Base):
     __tablename__ = "admins"
     __table_args__ = {'extend_existing': True}
@@ -24,10 +19,8 @@ class AdminAuth(Base):
     school     = Column(String, nullable=True)
     email      = Column(String, nullable=False, unique=True)
     username   = Column(String, nullable=True, unique=True)
-    password   = Column(String, nullable=True)   # SHA-256 hash
+    password   = Column(String, nullable=True)
 
-
-# ─── Pydantic schemas ──────────────────────────────────────────────────────────
 
 class RegisterRequest(BaseModel):
     name:     str
@@ -36,39 +29,33 @@ class RegisterRequest(BaseModel):
     password: str
 
 class LoginRequest(BaseModel):
-    identifier: str   # email or username
+    identifier: str
     password:   str
 
-
-# ─── Helpers ──────────────────────────────────────────────────────────────────
 
 def hash_password(pw: str) -> str:
     return hashlib.sha256(pw.encode()).hexdigest()
 
 
-# ─── Routes ───────────────────────────────────────────────────────────────────
-
 @router.post("/auth/register")
 def register(body: RegisterRequest, db: Session = Depends(get_db)):
+    # Normalize to lowercase before anything
+    username = body.username.strip().lower()
+    email    = body.email.strip().lower()
+
     # Check username collision
-    existing_user = db.query(AdminAuth).filter(
-        AdminAuth.username == body.username
-    ).first()
-    if existing_user:
+    if db.query(AdminAuth).filter(AdminAuth.username == username).first():
         raise HTTPException(status_code=409, detail="Username already taken.")
 
     # Check email collision
-    existing_email = db.query(AdminAuth).filter(
-        AdminAuth.email == body.email
-    ).first()
-    if existing_email:
+    if db.query(AdminAuth).filter(AdminAuth.email == email).first():
         raise HTTPException(status_code=409, detail="Email already registered.")
 
     new_admin = AdminAuth(
         admin_id   = str(uuid.uuid4()),
         admin_name = body.name,
-        username   = body.username,
-        email      = body.email,
+        username   = username,
+        email      = email,
         password   = hash_password(body.password),
         contact    = "",
         school     = "",
@@ -87,8 +74,8 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
 
 @router.post("/auth/login")
 def login(body: LoginRequest, db: Session = Depends(get_db)):
-    # Find by email OR username (case-insensitive)
     identifier = body.identifier.strip().lower()
+
     admin = db.query(AdminAuth).filter(
         (AdminAuth.email    == identifier) |
         (AdminAuth.username == identifier)

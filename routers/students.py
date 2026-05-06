@@ -97,31 +97,29 @@ async def create_student(
 
     # ── Save student to database ──────────────────────────────────────
     # Map frontend field names → database model field names
-    new_student = models.Student(
-        student_id     = ref,
-        first_name     = firstname,
-        last_name      = secondname,
-        email          = email,
-        contact        = contact,
-        date_of_birth  = date,
-        place_of_birth = place,
-        department     = Department,
-        speciality     = specialty,
-        parent_name    = emergencyName,
-        photo_url      = photo_url,     # Cloudinary HTTPS URL stored here
-        age            = "",
-        gender         = gender,
-        school         = school,
-        campus         = campus,
-        address        = address,
-        nationality    = nationality,
-        city           = city,
-        emergencyName  = emergencyName,
-        emergencyPhone = emergencyPhone,
-
-
-
-    )
+   # ✅ Correct — matches your model column names exactly
+new_student = models.Student(
+    student_id     = ref,
+    first_name     = firstname,
+    last_name      = secondname,
+    email          = email,
+    contact        = contact,
+    date_of_birth  = date,
+    place_of_birth = place,
+    department     = Department,
+    speciality     = specialty,
+    parent_name    = emergencyName,   # parent_name stores emergency contact name
+    emergency_phone = emergencyPhone, # ✅ correct column name
+    photo_url      = photo_url,
+    age            = "",
+    gender         = gender,
+    school         = school,
+    campus         = campus,
+    level          = level,           # ✅ was missing entirely!
+    address        = address,
+    nationality    = nationality,
+    city           = city,
+)
 
     db.add(new_student)
     db.commit()

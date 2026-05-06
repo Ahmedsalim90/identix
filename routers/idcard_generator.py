@@ -6,6 +6,8 @@ from pdf_generator import generate_id_card
 import models
 import os
 import tempfile
+import uuid
+from datetime import datetime, timedelta
 
 router = APIRouter()
 
@@ -27,7 +29,7 @@ def generate_cards_post(payload: dict, db: Session = Depends(get_db)):
     results = []
     for sid in student_ids:
         result = _generate_single(sid, db)
-        results.append(result)
+        results.append({"student_id": sid, "status": "generated"})
 
     return {"generated": results}
 
@@ -65,7 +67,34 @@ def _generate_single(student_id: str, db: Session):
     if not output:
         raise HTTPException(status_code=500, detail="PDF generation failed")
 
-    # 4. Return the PDF file
+    # 4. Save the ID card record to the database
+    issued_date = datetime.now().strftime("%Y-%m-%d")
+    expire_date = (datetime.now() + timedelta(days=365)).strftime("%Y-%m-%d")
+
+    # Check if a card already exists for this student
+    existing_card = db.query(models.IDCard).filter(
+        models.IDCard.student_id == student_id
+    ).first()
+
+    if existing_card:
+        # Update the existing card dates
+        existing_card.issued_date = issued_date
+        existing_card.expire_date = expire_date
+        db.commit()
+        db.refresh(existing_card)
+    else:
+        # Create a new card record
+        new_card = models.IDCard(
+            card_id=str(uuid.uuid4()),
+            student_id=student_id,
+            issued_date=issued_date,
+            expire_date=expire_date,
+        )
+        db.add(new_card)
+        db.commit()
+        db.refresh(new_card)
+
+    # 5. Return the PDF file
     return FileResponse(
         path=output,
         media_type="application/pdf",

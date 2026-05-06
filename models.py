@@ -8,7 +8,6 @@ class Student(Base):
     student_id = Column(String, primary_key=True, index=True)
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
-    age = Column(String, nullable=False)
     place_of_birth = Column(String, nullable=False)
     date_of_birth = Column(String, nullable=False)
     department = Column(String, nullable=False)
@@ -55,6 +54,8 @@ class Notification(Base):
     message = Column(String, nullable=False)
     is_read = Column(String, default="false")
     created_at = Column(String, nullable=False)
+
+    
     
 #__tablename__ → tells SQLAlchemy which table in PostgreSQL to use
 #Column → represents each field in the table

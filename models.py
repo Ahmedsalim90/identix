@@ -1,6 +1,7 @@
 from sqlalchemy import Column, String, ForeignKey
 from sqlalchemy.orm import relationship
 from database import Base
+from datetime import datetime
 
 class Student(Base):
     __tablename__ = "students"
@@ -25,6 +26,9 @@ class Student(Base):
     city = Column(String, nullable=True)
     school = Column(String, nullable=True)
     emergency_phone = Column(String, nullable=True)
+     created_at      = Column(String, nullable=True,   # ← NEW
+                             default=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
 
     idcards = relationship("IDCard", back_populates="student")
 

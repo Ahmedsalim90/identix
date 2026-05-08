@@ -9,8 +9,7 @@ import os
 import cloudinary
 import cloudinary.uploader
 
-# Age calcultor
-
+# Age calculator
 def calculate_age(dob_str: str) -> str:
     try:
         dob = datetime.strptime(dob_str, "%Y-%m-%d").date()
@@ -28,7 +27,6 @@ cloudinary.config(
 )
 
 router = APIRouter()
-
 
 async def upload_to_cloudinary(img: UploadFile, ref: str) -> str:
     try:
@@ -92,7 +90,7 @@ async def create_student(
         parent_name     = emergencyName,
         emergency_phone = emergencyPhone,
         photo_url       = photo_url,
-        age             = calculate_age(date) ,
+        age             = calculate_age(date),
         gender          = gender,
         school          = school,
         campus          = campus,
@@ -100,6 +98,7 @@ async def create_student(
         address         = address,
         nationality     = nationality,
         city            = city,
+        created_at      = datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
     )
 
     db.add(new_student)
@@ -137,7 +136,52 @@ async def create_student(
 @router.get("/students")
 def get_students(db: Session = Depends(get_db)):
     students = db.query(models.Student).all()
-    return {"students": students}
+    result = []
+    for s in students:
+        # Check if student has a generated ID card
+        card = db.query(models.IDCard).filter(
+            models.IDCard.student_id == s.student_id
+        ).first()
+        id_status = "generated" if card else "pending"
+
+        created_at = s.created_at or (card.issued_date if card else datetime.now().strftime("%Y-%m-%d"))
+
+
+        result.append({
+            "student_id":    s.student_id,
+            "first_name":    s.first_name,
+            "last_name":     s.last_name,
+            "name":          f"{s.first_name} {s.last_name}",
+            "email":         s.email or "",
+            "department":    s.department or "",
+            "speciality":    s.speciality or "",
+            "level":         s.level or "",
+            "campus":        s.campus or "",
+            "photo_url":     s.photo_url or "",
+            "contact":       s.contact or "",
+            "gender":        s.gender or "",
+            "date_of_birth": s.date_of_birth or "",
+            "nationality":   s.nationality or "",
+            "address":       s.address or "",
+            "school":        s.school or "",
+            "age":           s.age or "",
+            "city":          s.city or "",
+            "place_of_birth":s.place_of_birth or "",
+            "parent_name":   s.parent_name or "",
+            "emergency_phone":s.emergency_phone or "",
+            # ← Key fields the frontend needs for status
+            "idStatus":      id_status,
+            "status":        id_status,
+            "cardStatus":    id_status,
+            "created_at":        created_at,
+            "createdAt":         created_at,
+            "registeredAt":      created_at,
+            "enrolledAt":        created_at,
+            "registration_date": created_at,
+            "date":              created_at,
+
+        })
+    return {"students": result, "data": result, "total": len(result)}
 
 
 @router.get("/students/{student_id}")

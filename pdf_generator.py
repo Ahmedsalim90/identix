@@ -401,7 +401,7 @@ def _draw_back(c, ox, oy, student, card):
     c.drawString(ox+18*mm, oy+H-12.5*mm, "BUSINESS SCHOOL")
     c.setFont("Helvetica-Oblique", 5)
     c.setFillColor(HexColor("#C8E0FF"))
-    c.drawString(ox+18*mm, oy+H-16.5*mm, "Excellence. Integrity. Impact.")
+    c.drawString(ox+18*mm, oy+H-16.5*mm, "Training. Innovative Proffesionals")
 
     # Vertical divider
     c.setStrokeColor(HexColor("#DDDDDD"))

@@ -45,10 +45,10 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(auth_router)
 app.include_router(students_router)
 app.include_router(idcard_generator_router) 
+app.include_router(idcard_router)
 app.include_router(admin_router)
 app.include_router(notifications_router)
 app.include_router(upload_router)
-app.include_router(idcard_router)
 app.include_router(stats_router)
 
 

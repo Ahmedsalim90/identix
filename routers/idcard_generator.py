@@ -165,7 +165,7 @@ def _make_pdf(student: models.Student) -> str:
     return result
 
 
-def _save_card_record(student_id: str, db: Session) -> models.IDCard:
+def _save_card_record(student_id: str,pdf_url: str, db: Session) -> models.IDCard:
     issued = datetime.now().strftime("%Y-%m-%d")
     expire = (datetime.now() + timedelta(days=365)).strftime("%Y-%m-%d")
     existing = db.query(models.IDCard).filter(

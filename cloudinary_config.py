@@ -25,4 +25,4 @@ def upload_pdf(file_path: str, public_id: str) -> str:
         overwrite=True,
         access_mode="public",        # re-generating overwrites the old file
     )
-    return result["secure_url"]
+    return result["url"]

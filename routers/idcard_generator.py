@@ -192,24 +192,42 @@ def _save_card_record(student_id: str,pdf_url: str, db: Session) -> models.IDCar
 
 @router.get("/idcards/{student_id}/download")
 def download_idcard(student_id: str, db: Session = Depends(get_db)):
+    student = _get_student_or_404(student_id, db)
     card = db.query(models.IDCard).filter(
         models.IDCard.student_id == student_id
     ).first()
     if not card:
         raise HTTPException(status_code=404, detail="No card found for this student")
-    if not card.pdf_url:
-        raise HTTPException(status_code=404, detail="No PDF generated yet")
-    
-    # Fetch from Cloudinary and stream to client
-    import urllib.request
+
+    # Regenerate PDF fresh every time
     import tempfile
-    
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
     tmp.close()
-    urllib.request.urlretrieve(card.pdf_url, tmp.name)
-    
+
+    student_data = {
+        "student_id":    student.student_id,
+        "first_name":    student.first_name,
+        "last_name":     student.last_name,
+        "department":    student.department,
+        "speciality":    student.speciality,
+        "photo_url":     student.photo_url,
+        "level":         student.level,
+        "campus":        student.campus,
+        "gender":        student.gender,
+        "school":        student.school,
+        "date_of_birth": getattr(student, "date_of_birth", ""),
+        "nationality":   getattr(student, "nationality", ""),
+        "contact":       getattr(student, "contact", ""),
+        "issued_date":   card.issued_date,
+        "expire_date":   card.expire_date,
+    }
+
+    result = generate_id_card(student_data, tmp.name)
+    if not result:
+        raise HTTPException(status_code=500, detail="PDF generation failed")
+
     return FileResponse(
         path=tmp.name,
         media_type="application/pdf",
-        filename=f"id_card_{student_id}.pdf"
+        filename=f"id_card_{student.student_id}.pdf"
     )

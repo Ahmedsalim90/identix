@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from database import engine
 import models
+import os
 
 # Import all routers
 from routers.admin import router as admin_router
@@ -33,6 +35,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ← Static files AFTER app is created
+os.makedirs("static/idcards", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 # Register all routers
 app.include_router(auth_router)

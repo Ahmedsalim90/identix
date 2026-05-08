@@ -243,7 +243,7 @@ def _draw_front(c, ox, oy, student, card):
     c.drawString(ox+21*mm, oy+H-13*mm, "BUSINESS SCHOOL")
     c.setFont("Helvetica-Oblique", 5.5)
     c.setFillColor(MID_BLUE)
-    c.drawString(ox+21*mm, oy+H-17*mm, "Excellence. Integrity. Impact.")
+    c.drawString(ox+21*mm, oy+H-17*mm, "INNOVATIVE PROFFESSIONAL")
 
     # IDentix logo (top right)
     _identix_logo(c, ox+W-28*mm, oy+H-10*mm)

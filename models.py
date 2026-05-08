@@ -35,6 +35,7 @@ class IDCard(Base):
     student_id = Column(String, ForeignKey("students.student_id"))
     issued_date = Column(String, nullable=False)
     expire_date = Column(String, nullable=False)
+    pdf_url     = Column(String, nullable=True)
 
     student = relationship("Student", back_populates="idcards")
 

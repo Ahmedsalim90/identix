@@ -22,6 +22,7 @@ def upload_pdf(file_path: str, public_id: str) -> str:
         public_id=public_id,
         resource_type="raw",   # required for PDFs
         folder="idcards",
-        overwrite=True,        # re-generating overwrites the old file
+        overwrite=True,
+        access_mode="public",        # re-generating overwrites the old file
     )
     return result["secure_url"]

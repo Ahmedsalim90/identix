@@ -49,14 +49,14 @@ def generate_cards_post(payload: dict, db: Session = Depends(get_db)):
     failed = []
 
     for sid in student_ids:
-        
+
         try:
             student = _get_student_or_404(sid, db)
 
             # ── Generate PDF and upload to Cloudinary ─────────────────────
             pdf_url = _make_pdf(student)  # now returns Cloudinary URL directly
 
-            card = _save_card_record(sid, db)
+            card = _save_card_record(sid, pdf_url, db)
 
             generated.append({
                 "id":             card.card_id,
@@ -167,13 +167,14 @@ def _make_pdf(student: models.Student) -> str:
 
 def _save_card_record(student_id: str, db: Session) -> models.IDCard:
     issued = datetime.now().strftime("%Y-%m-%d")
-    expire = (datetime.now() + timedelta(days=365 * 4)).strftime("%Y-%m-%d")
+    expire = (datetime.now() + timedelta(days=365)).strftime("%Y-%m-%d")
     existing = db.query(models.IDCard).filter(
         models.IDCard.student_id == student_id
     ).first()
     if existing:
         existing.issued_date = issued
         existing.expire_date = expire
+        existing.pdf_url     = pdf_url
         db.commit()
         db.refresh(existing)
         return existing
@@ -182,6 +183,7 @@ def _save_card_record(student_id: str, db: Session) -> models.IDCard:
         student_id=student_id,
         issued_date=issued,
         expire_date=expire,
+        pdf_url    = pdf_url,
     )
     db.add(card)
     db.commit()

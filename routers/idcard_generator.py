@@ -10,12 +10,7 @@ from datetime import datetime, timedelta
 
 router = APIRouter()
 
-# ── Folder where generated PDFs are saved and served ──────────────────────────
-# Make sure your FastAPI app mounts this folder as a static directory:
-#   from fastapi.staticfiles import StaticFiles
-#   app.mount("/static", StaticFiles(directory="static"), name="static")
-#
-# And set your PUBLIC_BASE_URL env var (e.g. https://identix-api-production.up.railway.app)
+
 PDF_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "idcards")
 os.makedirs(PDF_DIR, exist_ok=True)
 
@@ -54,20 +49,16 @@ def generate_cards_post(payload: dict, db: Session = Depends(get_db)):
     failed = []
 
     for sid in student_ids:
+        
         try:
             student = _get_student_or_404(sid, db)
 
-            # ── Generate the PDF and get its saved path ────────────────────
-            pdf_path = _make_pdf(student)   # <-- NOW we keep the path!
-
-            # ── Build a publicly accessible URL for the PDF ───────────────
-            pdf_filename = os.path.basename(pdf_path)
-            pdf_url = f"{PUBLIC_BASE_URL}/static/idcards/{pdf_filename}"
+            # ── Generate PDF and upload to Cloudinary ─────────────────────
+            pdf_url = _make_pdf(student)  # now returns Cloudinary URL directly
 
             card = _save_card_record(sid, db)
 
             generated.append({
-                # ── Identity ──────────────────────────────────────────────
                 "id":             card.card_id,
                 "card_id":        card.card_id,
                 "studentId":      student.student_id,
@@ -75,17 +66,14 @@ def generate_cards_post(payload: dict, db: Session = Depends(get_db)):
                 "name":           f"{student.first_name} {student.last_name}",
                 "first_name":     student.first_name,
                 "last_name":      student.last_name,
-                # ── Academic info ─────────────────────────────────────────
                 "department":     student.department or "",
                 "speciality":     student.speciality or "",
                 "level":          student.level or "",
                 "campus":         student.campus or "",
                 "school":         student.school or "",
-                # ── Contact / photo ───────────────────────────────────────
                 "photo":          student.photo_url or "",
                 "photo_url":      student.photo_url or "",
                 "email":          student.email or "",
-                # ── Dates ─────────────────────────────────────────────────
                 "issued_date":    card.issued_date,
                 "expire_date":    card.expire_date,
                 "issuedAt":       card.issued_date,
@@ -93,11 +81,9 @@ def generate_cards_post(payload: dict, db: Session = Depends(get_db)):
                 "validUntil":     card.expire_date,
                 "generationDate": card.issued_date,
                 "enrolledAt":     None,
-                # ── Status ────────────────────────────────────────────────
                 "cardStatus":     "active",
                 "status":         "generated",
                 "idNumber":       student.student_id,
-                # ── THE KEY FIELD: URL of the backend-generated PDF ───────
                 "pdf_url":        pdf_url,
             })
 
@@ -135,9 +121,9 @@ def _get_student_or_404(student_id: str, db: Session) -> models.Student:
     return student
 
 
+from cloudinary_config import upload_pdf
+
 def _make_pdf(student: models.Student) -> str:
-    """Generate the PDF using pdf_generator and save it to PDF_DIR.
-    Returns the full path of the saved file."""
     student_data = {
         "student_id":    student.student_id,
         "first_name":    student.first_name,
@@ -151,8 +137,23 @@ def _make_pdf(student: models.Student) -> str:
         "school":        student.school,
         "date_of_birth": getattr(student, "date_of_birth", ""),
         "nationality":   getattr(student, "nationality", ""),
-        "contact":       getattr(student, "phone", getattr(student, "contact", "")),
+        "contact":       getattr(student, "contact", ""),
     }
+
+    # Save PDF temporarily
+    filename = f"id_card_{student.student_id}.pdf"
+    output_path = os.path.join(PDF_DIR, filename)
+
+    result = generate_id_card(student_data, output_path)
+    if not result:
+        raise Exception(f"PDF generation failed for {student.student_id}")
+
+    # Upload to Cloudinary and return permanent URL
+    cloudinary_url = upload_pdf(
+        output_path,
+        public_id=f"id_card_{student.student_id}"
+    )
+    return cloudinary_url
 
     # Use a stable filename so re-generating overwrites the old file
     filename = f"id_card_{student.student_id}.pdf"

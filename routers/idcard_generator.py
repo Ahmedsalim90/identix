@@ -189,3 +189,27 @@ def _save_card_record(student_id: str,pdf_url: str, db: Session) -> models.IDCar
     db.commit()
     db.refresh(card)
     return card
+
+@router.get("/idcards/{student_id}/download")
+def download_idcard(student_id: str, db: Session = Depends(get_db)):
+    card = db.query(models.IDCard).filter(
+        models.IDCard.student_id == student_id
+    ).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="No card found for this student")
+    if not card.pdf_url:
+        raise HTTPException(status_code=404, detail="No PDF generated yet")
+    
+    # Fetch from Cloudinary and stream to client
+    import urllib.request
+    import tempfile
+    
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+    tmp.close()
+    urllib.request.urlretrieve(card.pdf_url, tmp.name)
+    
+    return FileResponse(
+        path=tmp.name,
+        media_type="application/pdf",
+        filename=f"id_card_{student_id}.pdf"
+    )
